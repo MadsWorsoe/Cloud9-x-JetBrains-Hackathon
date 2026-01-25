@@ -13,7 +13,7 @@ python manage.py runserver
 In order for the project to function properly, you have to run a serious of commands to fetch and process data in the following order:
 
   1. get_all_series_for_draft.py (gets all the series data and stores it inside DraftActions)
-  2. train_draft_model_v3.py (trains a model based on the DraftAction data)
+  2. train_draft_model.py (trains a model based on the DraftAction data)
   3. process_draft_tables.py (processes DraftAction into the two Picks & Bans stats tables)
 
 Once that is complete, all the data should be processed for the site to function.
