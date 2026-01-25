@@ -18,3 +18,4 @@ In order for the project to function properly, you have to run a serious of comm
 
 Once that is complete, all the data should be processed for the site to function.
 
+If you want to be able to show Team Icons, Champion Icons etc. I will refer to the Riot Offical Data Dragon here: https://developer.riotgames.com/docs/lol#data-dragon
