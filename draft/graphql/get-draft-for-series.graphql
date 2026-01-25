@@ -1,0 +1,45 @@
+﻿query GetSeriesDraftState($series_id: ID!) {
+  seriesState(id: $series_id) {
+    teams {
+        id
+        players {
+            id
+            name
+        }
+      name
+      score
+      won
+    }
+    games(filter: {started: true, finished: true}) {
+      sequenceNumber
+      teams {
+        players {
+          id
+          name
+          character {
+            id
+            name
+          }
+        }
+        id
+        name
+        side
+          won
+      }
+      draftActions {
+        id
+        type
+        sequenceNumber
+        drafter {
+          id
+          type
+        }
+        draftable {
+          type
+          id
+          name
+        }
+      }
+    }
+  }
+}

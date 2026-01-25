@@ -1,0 +1,332 @@
+{
+    "Ambessa": [
+        "top"
+    ],
+    "Poppy": [
+        "support",
+        "jungle",
+        "top"
+    ],
+    "Annie": [
+        "mid"
+    ],
+    "Yunara": [
+        "bot"
+    ],
+    "Nautilus": [
+        "support"
+    ],
+    "Rumble": [
+        "top"
+    ],
+    "JarvanIV": [
+        "jungle"
+    ],
+    "Orianna": [
+        "mid"
+    ],
+    "Corki": [
+        "bot"
+    ],
+    "Rell": [
+        "support"
+    ],
+    "Sion": [
+        "top"
+    ],
+    "Trundle": [
+        "jungle"
+    ],
+    "Akali": [
+        "mid"
+    ],
+    "Zeri": [
+        "bot"
+    ],
+    "Neeko": [
+        "support"
+    ],
+    "Aatrox": [
+        "top"
+    ],
+    "XinZhao": [
+        "jungle"
+    ],
+    "Taliyah": [
+        "mid"
+    ],
+    "Sivir": [
+        "bot"
+    ],
+    "Rakan": [
+        "support"
+    ],
+    "Renekton": [
+        "top"
+    ],
+    "Vi": [
+        "jungle"
+    ],
+    "Ahri": [
+        "mid"
+    ],
+    "Ziggs": [
+        "bot",
+        "mid"
+    ],
+    "Leona": [
+        "support"
+    ],
+    "Ornn": [
+        "top"
+    ],
+    "Maokai": [
+        "jungle"
+    ],
+    "Yone": [
+        "mid"
+    ],
+    "Jhin": [
+        "bot"
+    ],
+    "Alistar": [
+        "support"
+    ],
+    "Xin Zhao": [
+        "jungle"
+    ],
+    "Wukong": [
+        "jungle"
+    ],
+    "Ryze": [
+        "mid"
+    ],
+    "Pantheon": [
+        "jungle"
+    ],
+    "Ezreal": [
+        "bot"
+    ],
+    "Jarvan IV": [
+        "jungle"
+    ],
+    "Aurora": [
+        "mid"
+    ],
+    "Varus": [
+        "bot"
+    ],
+    "Nocturne": [
+        "jungle"
+    ],
+    "Bard": [
+        "support"
+    ],
+    "KSante": [
+        "top"
+    ],
+    "Naafiri": [
+        "jungle"
+    ],
+    "Xayah": [
+        "bot"
+    ],
+    "Braum": [
+        "support"
+    ],
+    "RekSai": [
+        "top"
+    ],
+    "Qiyana": [
+        "jungle"
+    ],
+    "Miss Fortune": [
+        "bot"
+    ],
+    "Caitlyn": [
+        "bot"
+    ],
+    "Karma": [
+        "support"
+    ],
+    "Galio": [
+        "mid",
+        "top"
+    ],
+    "Renata Glasc": [
+        "support"
+    ],
+    "Hwei": [
+        "mid"
+    ],
+    "Smolder": [
+        "bot",
+        "mid"
+    ],
+    "LeBlanc": [
+        "mid"
+    ],
+    "Ashe": [
+        "bot"
+    ],
+    "Lulu": [
+        "support"
+    ],
+    "Sylas": [
+        "mid"
+    ],
+    "Kalista": [
+        "bot"
+    ],
+    "Tristana": [
+        "bot"
+    ],
+    "Jayce": [
+        "top"
+    ],
+    "Swain": [
+        "mid"
+    ],
+    "KaiSa": [
+        "bot"
+    ],
+    "Lissandra": [
+        "mid"
+    ],
+    "Lucian": [
+        "bot"
+    ],
+    "Nami": [
+        "support"
+    ],
+    "Gnar": [
+        "top"
+    ],
+    "Zyra": [
+        "jungle"
+    ],
+    "Gwen": [
+        "top"
+    ],
+    "Lee Sin": [
+        "jungle"
+    ],
+    "Yorick": [
+        "top"
+    ],
+    "Cassiopeia": [
+        "mid"
+    ],
+    "Blitzcrank": [
+        "support"
+    ],
+    "Skarner": [
+        "jungle"
+    ],
+    "Viktor": [
+        "mid"
+    ],
+    "Pyke": [
+        "support"
+    ],
+    "Taric": [
+        "support"
+    ],
+    "Jax": [
+        "top"
+    ],
+    "Gragas": [
+        "top",
+        "support"
+    ],
+    "Twisted Fate": [
+        "mid"
+    ],
+    "Ivern": [
+        "jungle"
+    ],
+    "Kled": [
+        "top"
+    ],
+    "Azir": [
+        "mid"
+    ],
+    "Sett": [
+        "top"
+    ],
+    "Volibear": [
+        "jungle"
+    ],
+    "Sejuani": [
+        "jungle"
+    ],
+    "ChoGath": [
+        "top"
+    ],
+    "Milio": [
+        "support"
+    ],
+    "Senna": [
+        "bot"
+    ],
+    "Viego": [
+        "jungle"
+    ],
+    "Urgot": [
+        "top"
+    ],
+    "Elise": [
+        "support"
+    ],
+    "Mordekaiser": [
+        "top"
+    ],
+    "Draven": [
+        "bot"
+    ],
+    "Morgana": [
+        "support"
+    ],
+    "Zed": [
+        "jungle"
+    ],
+    "Anivia": [
+        "mid"
+    ],
+    "Kassadin": [
+        "mid"
+    ],
+    "Vayne": [
+        "bot"
+    ],
+    "Soraka": [
+        "support"
+    ],
+    "Dr. Mundo": [
+        "jungle"
+    ],
+    "Camille": [
+        "top"
+    ],
+    "Nidalee": [
+        "jungle"
+    ],
+    "Zoe": [
+        "mid"
+    ],
+    "Thresh": [
+        "support"
+    ],
+    "Syndra": [
+        "mid"
+    ],
+    "Jinx": [
+        "bot"
+    ],
+    "Mel": [
+        "mid"
+    ],
+    "Seraphine": [
+        "support"
+    ]
+}

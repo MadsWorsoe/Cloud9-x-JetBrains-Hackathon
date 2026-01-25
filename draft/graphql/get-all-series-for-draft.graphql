@@ -1,0 +1,35 @@
+﻿query GetAllSeriesInNext24Hours($endCursor: Cursor!) {
+  allSeries(
+      first: 50
+      after: $endCursor
+    filter:{
+      titleId: 3
+      type: ESPORTS
+    }
+  ) {
+    totalCount,
+    pageInfo{
+      hasNextPage
+      endCursor
+    }
+    edges{
+        cursor
+      node{
+        ...seriesFields
+      }
+    }
+  }
+}
+fragment seriesFields on Series {
+  id
+  tournament {
+    name
+  }
+  startTimeScheduled
+  teams {
+    baseInfo {
+      id
+      name
+    }
+  }
+}
