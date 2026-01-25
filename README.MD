@@ -1,3 +1,7 @@
+Requirements:
+
+Requires local database, I used sqlite3 for development.
+
 This project was created for the Cloud 9 Hackathon.
 
 In order to deploy the project you have to have Python installed.
