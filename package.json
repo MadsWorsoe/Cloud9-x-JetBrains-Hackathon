@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@chakra-ui/react": "^3.28.1",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "framer-motion": "^12.23.24",
+    "react-svg-pan-zoom": "^3.13.1",
+    "react-zoom-pan-pinch": "^3.7.0"
+  }
+}

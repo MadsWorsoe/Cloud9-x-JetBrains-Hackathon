@@ -1,0 +1,15 @@
+numpy
+pandas
+requests
+Django==5.0.3
+aiohttp==3.9.3
+python-dotenv==1.0.1
+django-cors-headers==4.9.0
+whitenoise
+gunicorn
+psycopg2
+torch
+torchvision
+djangorestframework
+python-frontmatter
+markdown
