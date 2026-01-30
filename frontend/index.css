@@ -1,0 +1,6 @@
+/* optional global CSS */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background-color: #f5f5f5;
+}
