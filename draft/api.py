@@ -3,7 +3,7 @@ from matches.models import Team, Game
 from django.db.models import Q, Count
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .services.serializer import ChampionSerializer, TeamSerializer
+from .serializers import ChampionSerializer, TeamSerializer
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 import torch
@@ -12,18 +12,12 @@ import numpy as np
 import os
 import json
 
-from .ml.model import DraftPolicyNet
-from .ml.encoder import encode_state, get_uuid_to_roles, JSON_ROLE_TO_INTERNAL, ROLES, compute_role_pressure
-from .ml.phase import get_draft_phase
+from .machine_learning.analyzer import DeltaAnalyzer as DraftDeltaAnalyzer
+from .machine_learning.model import DraftTransformerModel
+from django.conf import settings
+from .machine_learning.dataset import DRAFT_PHASES
 
 ROLES_LOWER = ["top", "jungle", "mid", "bot", "support"]
-from .ml.constants import DRAFT_PHASES
-from .ml.utils import find_role_assignment
-from .ml.analyzer import DeltaAnalyzer
-
-from .machine_learning.model_v2 import DraftTransformerModel
-from .machine_learning.analyzer_v2 import DeltaAnalyzerV2 as DeltaAnalyzerV3
-from django.conf import settings
 
 class ChampionListView(APIView):
     """
@@ -235,47 +229,28 @@ class DraftRecommendationView(APIView):
     """
     Provides champion recommendations based on the current draft state and selected teams.
     """
-    _model_v2 = None
-    _checkpoint_v2 = None
-    _model_v3 = None
-    _mappings_v3 = None
+    _model = None
+    _mappings = None
 
     @classmethod
-    def load_model_v2(cls):
-        if cls._model_v2 is None:
-            model_path = os.path.join("draft", "ml_artifacts", "draft_model.pt")
-            if not os.path.exists(model_path):
-                return None
-            
-            cls._checkpoint_v2 = torch.load(model_path, map_location="cpu")
-            cls._model_v2 = DraftPolicyNet(
-                input_dim=cls._checkpoint_v2["input_dim"],
-                num_champions=cls._checkpoint_v2["num_champions"],
-                num_teams=cls._checkpoint_v2.get("num_teams", 100)
-            )
-            cls._model_v2.load_state_dict(cls._checkpoint_v2["model_state"])
-            cls._model_v2.eval()
-        return cls._model_v2
-
-    @classmethod
-    def load_model_v3(cls):
-        if cls._model_v3 is None:
-            model_path = os.path.join("draft", "ml_artifacts", "draft_model_v3.pth")
-            mapping_path = os.path.join("draft", "ml_artifacts", "draft_mappings_v3.json")
+    def load_model(cls):
+        if cls._model is None:
+            model_path = os.path.join("draft", "ml_artifacts", "draft_model.pth")
+            mapping_path = os.path.join("draft", "ml_artifacts", "draft_mappings.json")
             
             if not os.path.exists(model_path) or not os.path.exists(mapping_path):
                 return None
 
             with open(mapping_path, 'r') as f:
-                cls._mappings_v3 = json.load(f)
+                cls._mappings = json.load(f)
             
-            cls._model_v3 = DraftTransformerModel(
-                num_champions=cls._mappings_v3["num_champions"],
-                num_teams=cls._mappings_v3["num_teams"]
+            cls._model = DraftTransformerModel(
+                num_champions=cls._mappings["num_champions"],
+                num_teams=cls._mappings["num_teams"]
             )
-            cls._model_v3.load_state_dict(torch.load(model_path, map_location="cpu"))
-            cls._model_v3.eval()
-        return cls._model_v3
+            cls._model.load_state_dict(torch.load(model_path, map_location="cpu"))
+            cls._model.eval()
+        return cls._model
 
     def post(self, request):
         return self.get_recommendations(request)
@@ -284,21 +259,11 @@ class DraftRecommendationView(APIView):
         return self.get_recommendations(request)
 
     def get_recommendations(self, request):
-        # Determine version from query param or settings
-        version = request.query_params.get("model") or request.data.get("model") or getattr(settings, 'DRAFT_MODEL_VERSION', 'v3')
-        version = version.lower()
-
-        if version == 'v3':
-            return self.get_recommendations_v3(request)
-        else:
-            return self.get_recommendations_v2(request)
-
-    def get_recommendations_v3(self, request):
-        model = self.load_model_v3()
+        model = self.load_model()
         if not model:
-            return Response({"error": "V3 Model not found"}, status=500)
+            return Response({"error": "Model not found"}, status=500)
 
-        mappings = self._mappings_v3
+        mappings = self._mappings
         champ_to_idx = mappings["champ_to_idx"]
         idx_to_name = mappings["idx_to_name"]
         num_champions = mappings["num_champions"]
@@ -396,8 +361,8 @@ class DraftRecommendationView(APIView):
                 mask[val] = 0
         probs = probs * mask
 
-        # Role viability penalty (V3 logic)
-        analyzer = DeltaAnalyzerV3(
+        # Role viability penalty
+        analyzer = DraftDeltaAnalyzer(
             model, champ_to_idx, mappings["idx_to_champ"], idx_to_name, 
             os.path.join("draft", "ml_artifacts", "champ_roles.json")
         )
@@ -493,250 +458,4 @@ class DraftRecommendationView(APIView):
                 own_picks_names, enemy_picks_names, all_bans_names, 
                 total_actions, side, action_type
             )
-        })
-
-    def get_recommendations_v2(self, request):
-        model = self.load_model_v2()
-        if not model:
-            return Response({"error": "V2 Model not found"}, status=500)
-
-        # Try to get data from request body first (POST), then from query params/DB (GET)
-        data = request.data if request.method == "POST" else {}
-        
-        draft_id = data.get("draft_id") or request.query_params.get("draft_id")
-        
-        blue_team = data.get("blue_team")
-        red_team = data.get("red_team")
-        picks = data.get("picks", {})
-        bans = data.get("bans", {})
-
-        if not blue_team or not red_team or not picks or not bans:
-            if not draft_id:
-                return Response({"error": "draft_id or full state (blue_team, red_team, picks, bans) is required"}, status=400)
-            
-            try:
-                draft = DraftSession.objects.get(id=draft_id)
-                blue_team = blue_team or draft.blue_team
-                red_team = red_team or draft.red_team
-                picks = picks or draft.picks
-                bans = bans or draft.bans
-            except DraftSession.DoesNotExist:
-                return Response({"error": "Draft not found"}, status=404)
-
-        # Extract current state
-        def extract_ids(items):
-            ids = []
-            for item in items:
-                if not item: continue
-                if isinstance(item, dict) and "id" in item:
-                    ids.append(item["id"])
-                else:
-                    ids.append(str(item))
-            return ids
-
-        blue_picks = extract_ids(picks.get("blue", []))
-        red_picks = extract_ids(picks.get("red", []))
-        blue_bans = extract_ids(bans.get("blue", []))
-        red_bans = extract_ids(bans.get("red", []))
-
-        total_actions = len(blue_picks) + len(red_picks) + len(blue_bans) + len(red_bans)
-        if total_actions >= len(DRAFT_PHASES):
-            return Response({"error": "Draft is already completed"}, status=400)
-
-        side, action_type = DRAFT_PHASES[total_actions]
-        phase = get_draft_phase(total_actions)
-
-        # Map teams to indices
-        team_id_to_index = self._checkpoint_v2.get("team_id_to_index", {})
-        
-        blue_team_obj = None
-        if blue_team:
-            blue_team_obj = Team.objects.filter(Q(name=blue_team) | Q(external_id=blue_team)).first()
-        
-        red_team_obj = None
-        if red_team:
-            red_team_obj = Team.objects.filter(Q(name=red_team) | Q(external_id=red_team)).first()
-
-        blue_team_idx = team_id_to_index.get(blue_team_obj.external_id if blue_team_obj else None, 0)
-        red_team_idx = team_id_to_index.get(red_team_obj.external_id if red_team_obj else None, 0)
-
-        if side.lower() == "blue":
-            team_idx = blue_team_idx
-            opp_team_idx = red_team_idx
-        else:
-            team_idx = red_team_idx
-            opp_team_idx = blue_team_idx
-
-        champion_id_to_index = self._checkpoint_v2["champion_id_to_index"]
-        index_to_champion_id = {v: k for k, v in champion_id_to_index.items()}
-
-        own_picks = blue_picks if side.lower() == "blue" else red_picks
-        enemy_picks = red_picks if side.lower() == "blue" else blue_picks
-        all_bans = blue_bans + red_bans
-
-        # Encode state
-        state_data = encode_state(
-            own_picks=own_picks,
-            enemy_picks=enemy_picks,
-            banned_champions=all_bans,
-            side=side,
-            phase=phase,
-            team_idx=team_idx,
-            champion_id_to_index=champion_id_to_index
-        )
-
-        x_vec = np.concatenate([
-            state_data["own_picks"],
-            state_data["enemy_picks"],
-            state_data["bans"],
-            state_data["side"],
-            state_data["phase"],
-            state_data["role_pressure"]
-        ])
-        x_tensor = torch.tensor(x_vec, dtype=torch.float32).unsqueeze(0)
-        t_tensor = torch.tensor([team_idx], dtype=torch.long)
-        o_tensor = torch.tensor([opp_team_idx], dtype=torch.long)
-
-        with torch.no_grad():
-            logits = model(x_tensor, t_tensor, o_tensor)
-            
-            # Apply temperature to sharpen recommendations (T < 1.0 makes them more "opinionated")
-            temperature = 0.5 
-            probs = F.softmax(logits / temperature, dim=1).squeeze(0).numpy()
-
-        # Mask illegal moves
-        picked_banned_indices = []
-        for uuid in blue_picks + red_picks + blue_bans + red_bans:
-            if uuid in champion_id_to_index:
-                picked_banned_indices.append(champion_id_to_index[uuid])
-        
-        probs_masked = probs.copy()
-        for idx in picked_banned_indices:
-            probs_masked[idx] = 0.0
-        
-        # Apply role penalty if it's a pick
-        if action_type.lower() == "pick":
-            mapping = get_uuid_to_roles()
-            current_team_champ_roles = []
-            for uuid in own_picks:
-                roles = mapping.get(uuid, [])
-                internal_roles = [JSON_ROLE_TO_INTERNAL.get(r.lower()) for r in roles]
-                current_team_champ_roles.append([r for r in internal_roles if r])
-
-            for i in range(len(probs_masked)):
-                if probs_masked[i] == 0:
-                    continue
-                
-                champ_uuid = index_to_champion_id[i]
-                champ_roles = mapping.get(champ_uuid, [])
-                if not champ_roles:
-                    continue
-                
-                internal_roles = [JSON_ROLE_TO_INTERNAL.get(r.lower()) for r in champ_roles]
-                internal_roles = [r for r in internal_roles if r]
-                if not internal_roles:
-                    continue
-                
-                test_roles = current_team_champ_roles + [internal_roles]
-                if not find_role_assignment(test_roles):
-                    probs_masked[i] *= 0.01
-        
-        # Apply redundant ban penalty
-        elif action_type.lower() == "ban":
-            mapping = get_uuid_to_roles()
-            enemy_team_champ_roles = []
-            for uuid in enemy_picks:
-                roles = mapping.get(uuid, [])
-                internal_roles = [JSON_ROLE_TO_INTERNAL.get(r.lower()) for r in roles]
-                valid_roles = [r for r in internal_roles if r]
-                if valid_roles:
-                    enemy_team_champ_roles.append(valid_roles)
-
-            for i in range(len(probs_masked)):
-                if probs_masked[i] == 0:
-                    continue
-                
-                champ_uuid = index_to_champion_id[i]
-                champ_roles = mapping.get(champ_uuid, [])
-                
-                if not champ_roles:
-                    continue
-                
-                internal_roles = [JSON_ROLE_TO_INTERNAL.get(r.lower()) for r in champ_roles]
-                internal_roles = [r for r in internal_roles if r]
-                if not internal_roles:
-                    continue
-                
-                # If the enemy couldn't pick this champion anyway because they already filled its roles, 
-                # banning it is redundant and should be penalized.
-                test_roles = enemy_team_champ_roles + [internal_roles]
-                if not find_role_assignment(test_roles):
-                    probs_masked[i] *= 0.01
-
-        # Re-normalize to make scores more meaningful (sum to 1.0 for valid options)
-        total_prob = np.sum(probs_masked)
-        if total_prob > 0:
-            probs_masked /= total_prob
-
-        # Sort recommendations
-        sorted_indices = np.argsort(probs_masked)[::-1]
-
-        # Delta Analyzer setup
-        analyzer = DeltaAnalyzer(model, champion_id_to_index, index_to_champion_id)
-        baseline_uuid = None
-        if len(sorted_indices) > 1:
-            baseline_uuid = index_to_champion_id[int(sorted_indices[1])]
-
-        recommendations = []
-        
-        # We only do heavy hints for the top N recommendations to keep it fast
-        HINT_LIMIT = 10 
-
-        for i, idx in enumerate(sorted_indices[:50]): # Top 50
-            if probs_masked[idx] <= 0:
-                break
-            
-            uuid = index_to_champion_id[int(idx)]
-            score = float(probs_masked[idx])
-            
-            hints = {}
-            if i < HINT_LIMIT:
-                # 1. Role pressure reduction (derived from current state)
-                mapping = get_uuid_to_roles()
-                champ_roles = mapping.get(uuid, [])
-                internal_roles = [JSON_ROLE_TO_INTERNAL.get(r.lower()) for r in champ_roles]
-                internal_roles = [r for r in internal_roles if r]
-                
-                curr_pressure = state_data["role_pressure"]
-                temp_own_picks = own_picks + [uuid]
-                new_pressure = compute_role_pressure(temp_own_picks, enemy_picks, all_bans)
-                
-                pressure_diff = curr_pressure - new_pressure
-                rel_roles = [ROLES[j] for j in range(len(ROLES)) if pressure_diff[j] > 0.05]
-                if rel_roles:
-                    hints["pressure_reduction"] = rel_roles
-                
-                # 2. Flexibility
-                if len(internal_roles) > 1:
-                    hints["flex_roles"] = internal_roles
-                
-                # 3. Delta Analyzer (Lookahead "Why")
-                if baseline_uuid and uuid != baseline_uuid:
-                    hints["why"] = analyzer.analyze_pick(
-                        uuid, own_picks, enemy_picks, all_bans, 
-                        side, team_idx, opp_team_idx, total_actions, baseline_uuid,
-                        is_ban=(action_type.lower() == "ban")
-                    )
-
-            recommendations.append({
-                "champion_id": uuid,
-                "score": score,
-                "hints": hints
-            })
-
-        return Response({
-            "recommendations": recommendations,
-            "side": side,
-            "action_type": action_type,
-            "role_pressure": state_data["role_pressure"].tolist(),
         })

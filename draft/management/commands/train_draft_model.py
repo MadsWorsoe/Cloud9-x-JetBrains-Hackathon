@@ -3,13 +3,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from django.core.management.base import BaseCommand
-from draft.machine_learning.model_v2 import DraftTransformerModel
-from draft.machine_learning.dataset_v2 import prepare_data, DraftDatasetV2, get_champion_mapping, get_team_mapping
+from draft.machine_learning.model import DraftTransformerModel
+from draft.machine_learning.dataset import prepare_data, DraftDataset, get_champion_mapping, get_team_mapping
 from torch.utils.data import DataLoader
 import json
 
 class Command(BaseCommand):
-    help = "Train the new Transformer-based draft model (V3)"
+    help = "Train the Transformer-based draft model"
 
     def add_arguments(self, parser):
         parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train')
@@ -19,12 +19,12 @@ class Command(BaseCommand):
         games_data, champ_to_idx, team_to_idx, num_champions = prepare_data()
         
         # Get reverse mappings for saving
-        from draft.machine_learning.dataset_v2 import get_champion_mapping
+        from draft.machine_learning.dataset import get_champion_mapping
         _, idx_to_champ, idx_to_name = get_champion_mapping()
         
         num_teams = len(team_to_idx) + 1 # +1 for unknown
         
-        dataset = DraftDatasetV2(games_data, champ_to_idx, team_to_idx, num_champions)
+        dataset = DraftDataset(games_data, champ_to_idx, team_to_idx, num_champions)
         self.stdout.write(f"Found {len(dataset)} training samples.")
         
         dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
@@ -33,7 +33,7 @@ class Command(BaseCommand):
         model = DraftTransformerModel(num_champions=num_champions, num_teams=num_teams).to(device)
         
         artifacts_dir = "draft/ml_artifacts"
-        save_path = os.path.join(artifacts_dir, "draft_model_v3.pth")
+        save_path = os.path.join(artifacts_dir, "draft_model.pth")
         
         if os.path.exists(save_path):
             self.stdout.write("Loading existing model weights for incremental training...")
@@ -69,7 +69,7 @@ class Command(BaseCommand):
         artifacts_dir = "draft/ml_artifacts"
         os.makedirs(artifacts_dir, exist_ok=True)
         
-        save_path = os.path.join(artifacts_dir, "draft_model_v3.pth")
+        save_path = os.path.join(artifacts_dir, "draft_model.pth")
         torch.save(model.state_dict(), save_path)
         
         mappings = {
@@ -80,11 +80,8 @@ class Command(BaseCommand):
             "num_champions": num_champions,
             "num_teams": num_teams
         }
-        with open(os.path.join(artifacts_dir, "draft_mappings_v3.json"), 'r' if os.path.exists(os.path.join(artifacts_dir, "draft_mappings_v3.json")) else 'w') as f:
-             # Just overwrite it
-             pass
-        with open(os.path.join(artifacts_dir, "draft_mappings_v3.json"), 'w') as f:
+        with open(os.path.join(artifacts_dir, "draft_mappings.json"), 'w') as f:
             json.dump(mappings, f)
             
         self.stdout.write(f"Model saved to {save_path}")
-        self.stdout.write(f"Mappings saved to {os.path.join(artifacts_dir, 'draft_mappings_v3.json')}")
+        self.stdout.write(f"Mappings saved to {os.path.join(artifacts_dir, 'draft_mappings.json')}")

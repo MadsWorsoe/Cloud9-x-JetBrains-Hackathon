@@ -17,7 +17,6 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
   const [insights, setInsights] = useState(null);
   const [teams, setTeams] = useState([]);
   const [allChampions, setAllChampions] = useState([]);
-  const [modelVersion, setModelVersion] = useState("v3");
   const [isSelecting, setIsSelecting] = useState(false);
   const isMobile = useBreakpointValue({ base: true, lg: false });
   const toast = useToast();
@@ -81,7 +80,6 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
           red_team: draft.red_team,
           picks: draft.picks,
           bans: draft.bans,
-          model: modelVersion,
         }),
       })
         .then((data) => {
@@ -102,7 +100,7 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
       setInsights(null);
       setIsSelecting(false);
     }
-  }, [draft.id, draft.blue_team, draft.red_team, draft.picks, draft.bans, teamsSelected, modelVersion]);
+  }, [draft.id, draft.blue_team, draft.red_team, draft.picks, draft.bans, teamsSelected]);
 
   // Calculate current step based on filled slots
   const allSelected = useMemo(() => [
