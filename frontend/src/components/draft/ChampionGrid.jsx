@@ -5,6 +5,7 @@
   Spinner,
   VStack,
   Text,
+  useBreakpointValue,
 } from "@chakra-ui/react"
 import { useEffect, useMemo, useState } from "react"
 import { ChampionCard } from "./ChampionCard"
@@ -15,6 +16,8 @@ export default function ChampionGrid({ onSelectChampion, allSelected = [], recom
   const [champions, setChampions] = useState([])
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
+
+  const recLimit = useBreakpointValue({ base: 9, sm: 8, md: 8, lg: 10, xl: 10 }) || 10;
 
   const selectedIds = useMemo(() => new Set(allSelected.map((c) => c.id)), [allSelected])
 
@@ -71,13 +74,20 @@ export default function ChampionGrid({ onSelectChampion, allSelected = [], recom
 
   const top10 = useMemo(() => {
     if (search || recommendations.length === 0 || isComplete) return [];
-    return filteredChampions.slice(0, 10);
-  }, [filteredChampions, search, recommendations, isComplete]);
+    // Mobile wants 3x3=9, Tablet 2x4=8, Desktop 2x5=10.
+    return filteredChampions.slice(0, recLimit);
+  }, [filteredChampions, search, recommendations, isComplete, recLimit]);
 
   const others = useMemo(() => {
     if (search || recommendations.length === 0 || isComplete) return filteredChampions;
-    return filteredChampions.slice(10);
-  }, [filteredChampions, search, recommendations, isComplete]);
+    return filteredChampions.slice(recLimit);
+  }, [filteredChampions, search, recommendations, isComplete, recLimit]);
+
+  const recHeading = useMemo(() => {
+    if (recLimit === 9) return "Top 9 Recommendations";
+    if (recLimit === 8) return "Top 8 Recommendations";
+    return "Top 10 Recommendations";
+  }, [recLimit]);
 
   return (
     <VStack align="stretch" spacing={4} h="100%">
@@ -103,9 +113,9 @@ export default function ChampionGrid({ onSelectChampion, allSelected = [], recom
             {top10.length > 0 && (
               <Box>
                 <Text fontSize="xs" fontWeight="bold" color="blue.400" mb={3} textTransform="uppercase" letterSpacing="wider">
-                  Top Recommendations
+                  {recHeading}
                 </Text>
-                <SimpleGrid columns={{ base: 2, sm: 3, md: 5 }} spacing={4}>
+                <SimpleGrid columns={{ base: 3, sm: 4, md: 4, lg: 5, xl: 5 }} spacing={{ base: 2, md: 4 }}>
                   {top10.map((champion) => (
                     <ChampionCard
                       key={champion.id}
@@ -132,7 +142,7 @@ export default function ChampionGrid({ onSelectChampion, allSelected = [], recom
                   Other Champions
                 </Text>
               )}
-              <SimpleGrid columns={{ base: 4, sm: 5, md: 6, lg: 8 }} spacing={2}>
+              <SimpleGrid columns={{ base: 4, sm: 6, md: 8, lg: 10, xl: 12 }} spacing={{ base: 1, md: 2 }}>
                 {others.map((champion) => (
                   <ChampionCard
                     key={champion.id}

@@ -15,10 +15,10 @@ export default function PickRow({ side, picks = [], isActing, isCompact, isCompl
   const sideColor = side === "blue" ? "blue.500" : "red.500";
   const glowColor = side === "blue" ? "rgba(66, 153, 225, 0.6)" : "rgba(245, 101, 101, 0.6)";
 
-  const boxSize = isCompact ? "50px" : "80px";
+  const boxSize = isCompact ? { base: "24px", xs: "28px", sm: "32px", md: "36px", lg: "44px" } : { base: "60px", lg: "80px" };
 
   return (
-    <Box mb={isCompact ? 0 : 4} w={isCompact ? "auto" : "100%"}>
+    <Box mb={isCompact ? 0 : 4} w={isCompact ? "48%" : "100%"}>
       {!isCompact && (
         <Text 
           fontWeight="bold" 
@@ -32,7 +32,7 @@ export default function PickRow({ side, picks = [], isActing, isCompact, isCompl
           {side} Picks
         </Text>
       )}
-      <HStack spacing={isCompact ? 1 : 2} justify={side === "blue" ? "flex-start" : "flex-end"} align="start">
+      <HStack spacing={isCompact ? 1 : 2} justify="space-between" align="start" w="100%">
         {Array.from({ length: 5 }).map((_, i) => {
           const champion = picks[i];
           const isCurrentSlot = isActing && picks.slice(0, i).every(b => b !== null) && champion === null;
@@ -40,7 +40,8 @@ export default function PickRow({ side, picks = [], isActing, isCompact, isCompl
           return (
             <Box
               key={i}
-              w={boxSize}
+              flex="1"
+              maxW={boxSize}
               border="1px solid"
               borderColor={isCurrentSlot ? sideColor : "gray.600"}
               boxShadow={isCurrentSlot ? `0 0 8px ${glowColor}` : "none"}
@@ -50,7 +51,7 @@ export default function PickRow({ side, picks = [], isActing, isCompact, isCompl
               position="relative"
               animation={isCurrentSlot ? `${flash} 2s infinite ease-in-out` : "none"}
             >
-              <Box h={boxSize} w={boxSize} overflow="hidden">
+              <Box w="100%" aspectRatio={1} overflow="hidden">
                 {champion && (
                   <Tooltip
                     label={

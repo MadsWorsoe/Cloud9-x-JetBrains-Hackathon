@@ -84,28 +84,26 @@ export function ChampionCard({ champion, onClick, isLocked, isComplete, isSelect
         {cardContent}
         <Box 
           bg="gray.800" 
-          p={2} 
+          p={1} 
           borderRadius="md" 
           border="1px solid" 
           borderColor="gray.700"
-          minH="70px"
-          display="flex"
-          flexDirection="column"
+          minH={{ base: "40px", md: "50px" }}
         >
-          <Text fontSize="xs" fontWeight="bold" color="blue.300" mb={1} isTruncated>
+          <Text fontSize={{ base: "9px", md: "10px" }} fontWeight="bold" color="blue.300" mb={0.5} isTruncated>
             {champion.name}
           </Text>
           {hints?.why ? (
             <Text 
-              fontSize={hints.why.length > 40 ? "9px" : "10px"} 
+              fontSize={{ base: "7px", sm: "8px", md: "9px" }} 
               color="gray.300" 
-              lineHeight="1.1" 
-              noOfLines={4}
+              lineHeight="1" 
+              noOfLines={3}
             >
               {hints.why}
             </Text>
           ) : (
-            <Text fontSize="10px" color="gray.500" fontStyle="italic">
+            <Text fontSize={{ base: "7px", md: "9px" }} color="gray.500" fontStyle="italic">
               Strategic choice
             </Text>
           )}

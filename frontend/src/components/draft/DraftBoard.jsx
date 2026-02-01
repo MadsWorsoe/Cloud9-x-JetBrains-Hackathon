@@ -17,8 +17,9 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
   const [insights, setInsights] = useState(null);
   const [teams, setTeams] = useState([]);
   const [allChampions, setAllChampions] = useState([]);
+  const [modelVersion, setModelVersion] = useState("v3");
   const [isSelecting, setIsSelecting] = useState(false);
-  const isMobile = useBreakpointValue({ base: true, lg: false });
+  const isMobile = useBreakpointValue({ base: true, xl: false });
   const toast = useToast();
   
   if (!draft) return null;
@@ -80,6 +81,7 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
           red_team: draft.red_team,
           picks: draft.picks,
           bans: draft.bans,
+          model: modelVersion,
         }),
       })
         .then((data) => {
@@ -100,7 +102,7 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
       setInsights(null);
       setIsSelecting(false);
     }
-  }, [draft.id, draft.blue_team, draft.red_team, draft.picks, draft.bans, teamsSelected]);
+  }, [draft.id, draft.blue_team, draft.red_team, draft.picks, draft.bans, teamsSelected, modelVersion]);
 
   // Calculate current step based on filled slots
   const allSelected = useMemo(() => [
@@ -112,7 +114,7 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
 
   const totalActions = allSelected.length;
   const isComplete = totalActions >= DRAFT_PHASES.length;
-  const [currentSide, currentAction] = isComplete ? [null, null] : DRAFT_PHASES[totalActions];
+  const [currentSide, currentAction] = isComplete ? [null, null] : (DRAFT_PHASES[totalActions] || [null, null]);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -190,7 +192,7 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
   if (isMobile) {
     if (!teamsSelected) {
       return (
-        <VStack spacing={4} py={4} w="100%">
+        <VStack spacing={4} py={4} w="100%" maxW={{ md: "720px", lg: "100%", xl: "1400px" }} mx="auto">
           <Heading size="md" color="gray.400">Select Teams to Start</Heading>
           
           <Box w="100%" p={4} bg="gray.800" borderRadius="xl" border="1px solid" borderColor="blue.500">
@@ -218,7 +220,7 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
     const sideColor = isBlueActing ? "blue.400" : (currentSide === "red" ? "red.400" : "gray.500");
 
     return (
-      <VStack spacing={4} align="stretch" w="100%">
+      <VStack spacing={4} align="stretch" w="100%" maxW={{ md: "840px", lg: "100%", xl: "1400px" }} mx="auto">
         
         {/* Compact Header */}
         <Box 
@@ -229,34 +231,34 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
           borderBottom="4px solid"
           borderColor={sideColor}
           position="sticky"
-          top="72px"
+          top={{ base: "64px", md: "72px" }}
           zIndex={20}
         >
           <Flex align="center" justify="space-between" mb={2}>
             <HStack spacing={2} flex={1}>
-              <Logo name={blueTeam?.name} size="32px" />
-              <Text fontSize="xs" fontWeight="bold" isTruncated maxW="70px">{blueTeam?.name || "Blue"}</Text>
+              <Logo name={blueTeam?.name} size={{ base: "32px", md: "40px", lg: "48px" }} />
+              <Text fontSize={{ base: "xs", md: "sm", lg: "md" }} fontWeight="bold" isTruncated maxW={{ base: "70px", md: "120px", lg: "200px" }}>{blueTeam?.name || "Blue"}</Text>
             </HStack>
 
             <VStack spacing={0} flex={2}>
-              <Text fontSize="10px" fontWeight="bold" color="gray.500" textTransform="uppercase">
+              <Text fontSize={{ base: "10px", md: "xs" }} fontWeight="bold" color="gray.500" textTransform="uppercase">
                  {isComplete ? "Draft Finished" : `${currentAction} Phase`}
               </Text>
               {!isComplete && (
-                <Text fontSize="sm" fontWeight="black" color={sideColor} textAlign="center">
+                <Text fontSize={{ base: "sm", md: "md", lg: "lg" }} fontWeight="black" color={sideColor} textAlign="center">
                    {currentSide.toUpperCase()} {currentAction.toUpperCase()}
                 </Text>
               )}
             </VStack>
 
             <HStack spacing={2} flex={1} justify="flex-end">
-              <Text fontSize="xs" fontWeight="bold" isTruncated maxW="70px">{redTeam?.name || "Red"}</Text>
-              <Logo name={redTeam?.name} size="32px" />
+              <Text fontSize={{ base: "xs", md: "sm", lg: "md" }} fontWeight="bold" isTruncated maxW={{ base: "70px", md: "120px", lg: "200px" }}>{redTeam?.name || "Red"}</Text>
+              <Logo name={redTeam?.name} size={{ base: "32px", md: "40px", lg: "48px" }} />
             </HStack>
           </Flex>
           
             <VStack spacing={3} align="stretch">
-              <HStack justify="space-between" align="start" px={1}>
+              <HStack justify="space-between" align="start" px={1} spacing={2} w="100%">
                 <BanRow 
                   side="blue" 
                   bans={enrichedBans.blue} 
@@ -279,7 +281,7 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
               
               <Divider borderColor="gray.700" opacity={0.5} />
 
-              <HStack spacing={1} justify="space-between" align="start">
+              <HStack spacing={2} justify="space-between" align="start" w="100%">
                 <PickRow side="blue" picks={enrichedPicks.blue} isActing={currentSide === "blue" && currentAction === "pick"} isCompact isComplete={isComplete} />
                 <PickRow side="red" picks={enrichedPicks.red} isActing={currentSide === "red" && currentAction === "pick"} isCompact isComplete={isComplete} />
               </HStack>
@@ -292,6 +294,18 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
             blueTeamName={blueTeam?.name} 
             redTeamName={redTeam?.name} 
           />
+        )}
+
+        {!isComplete && (
+          <Box flex="1">
+            <ChampionGrid 
+              onSelectChampion={handleSelectChampion} 
+              allSelected={allSelected}
+              recommendations={recommendations}
+              isComplete={isComplete}
+              isSelecting={isSelecting}
+            />
+          </Box>
         )}
 
         {isComplete && (
@@ -318,13 +332,13 @@ export default function DraftBoard({ draft, setDraft, startNewDraft, copyToNewSe
   }
 
   return (
-    <Box w="100%">
+    <Box w="100%" maxW="1400px" mx="auto">
       
       <Grid
         w="100%"
         templateColumns={{
           base: "1fr",
-          lg: "240px 1fr 240px",
+          xl: "240px 1fr 240px",
         }}
         gap={4}
         alignItems="start"

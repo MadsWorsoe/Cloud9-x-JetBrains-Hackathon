@@ -12,10 +12,10 @@ export default function BanRow({ side, bans = [], isActing, isCompact, isComplet
   const sideColor = side === "blue" ? "blue.500" : "red.500";
   const glowColor = side === "blue" ? "rgba(66, 153, 225, 0.6)" : "rgba(245, 101, 101, 0.6)";
 
-  const boxSize = isCompact ? "40px" : "55px";
+  const boxSize = isCompact ? { base: "24px", xs: "28px", sm: "32px", md: "36px", lg: "44px" } : { base: "40px", lg: "55px" };
 
   return (
-    <Box mb={isCompact ? 0 : 4}>
+    <Box mb={isCompact ? 0 : 4} w={isCompact ? "48%" : "100%"}>
       {!isCompact && (
         <Text 
           fontWeight="bold" 
@@ -29,7 +29,7 @@ export default function BanRow({ side, bans = [], isActing, isCompact, isComplet
           {side} Bans
         </Text>
       )}
-      <HStack spacing={isCompact ? 1 : 2} justify={side === "blue" ? "flex-start" : "flex-end"}>
+      <HStack spacing={isCompact ? 1 : 2} justify="space-between" w="100%">
         {Array.from({ length: 5 }).map((_, i) => {
           const champion = bans[i];
           const isCurrentSlot = isActing && bans.slice(0, i).every(b => b !== null) && champion === null;
@@ -37,8 +37,9 @@ export default function BanRow({ side, bans = [], isActing, isCompact, isComplet
           return (
             <Box
               key={i}
-              w={boxSize}
-              h={boxSize}
+              flex="1"
+              maxW={boxSize}
+              aspectRatio={1}
               border="1px solid"
               borderColor={isCurrentSlot ? sideColor : "gray.600"}
               boxShadow={isCurrentSlot ? `0 0 8px ${glowColor}` : "none"}
